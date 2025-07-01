@@ -133,12 +133,22 @@
             <div class="absolute inset-0 z-0">
                 <canvas id="bgParticles" class="w-full h-full"></canvas>
             </div>
-            <!-- 3D Blob -->
-            <div class="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 hidden md:block">
-                <div id="blob3d" style="width:400px;height:400px;"></div>
-            </div>
             <div class="relative z-20 w-full max-w-2xl mx-auto p-4">
-                <header class="text-center p-4 rounded glassy">
+                <header class="text-center p-4 rounded glassy relative">
+                    <!-- 3-dot menu top left -->
+                    <div class="absolute left-2 top-2">
+                        <div class="relative inline-block text-left">
+                            <button id="menuBtn" onclick="toggleMenu()" class="p-2 rounded-full hover:bg-cyan-100 focus:outline-none">
+                                <svg class="w-6 h-6 text-cyan-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                            </button>
+                            <div id="menuDropdown" class="origin-top-left absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden z-50">
+                                <div class="py-1">
+                                    <button onclick="showHistoryModal();toggleMenu();" class="block w-full text-left px-4 py-2 text-cyan-700 hover:bg-cyan-100">View Chat History</button>
+                                    <button onclick="clearAllHistory();toggleMenu();" class="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100">Clear All History</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <h1 class="text-4xl md:text-5xl font-bold neon-anim mb-2">CHANAKYA GPT FULLY ADVANCED</h1>
                     <p class="text-lg text-blue-200 animate-pulse">Experience AI Conversations</p>
                 </header>
@@ -153,6 +163,11 @@
                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" /></svg>
                           Upload
                         </label>
+                        <!-- Clear Chat Button -->
+                        <button onclick="clearCurrentChat()" class="flex items-center bg-gradient-to-r from-red-400 to-pink-500 text-white px-3 py-2 rounded font-bold shadow-lg hover:scale-105 transition-transform" title="Clear Chat">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                          Clear Chat
+                        </button>
                         <!-- Message Input -->
                         <input id="userInput" type="text" placeholder="Type your message..." class="flex-grow p-2 border border-cyan-300 bg-gray-900 bg-opacity-60 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 transition">
                         <!-- Mic Button -->
@@ -166,6 +181,16 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Chat History Modal -->
+    <div id="historyModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 hidden">
+      <div class="bg-white rounded-xl p-6 max-w-lg w-full shadow-2xl relative">
+        <button onclick="hideHistoryModal()" class="absolute top-2 right-2 text-gray-500 hover:text-red-500">&times;</button>
+        <h2 class="text-2xl font-bold mb-4 text-cyan-700">Previous Chat Sessions</h2>
+        <div id="historyList" class="max-h-80 overflow-y-auto mb-4"></div>
+        <button onclick="clearAllHistory()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700">Clear All</button>
+      </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
@@ -258,75 +283,41 @@
             // Restore chat history if present
             if (localStorage.getItem('chatHistory')) {
                 const history = JSON.parse(localStorage.getItem('chatHistory'));
+                document.getElementById('chatbox').innerHTML = '';
                 history.forEach(([user, message]) => addMessageToChatbox(user, message));
             }
-            // 3D Blob
-            if (document.getElementById('blob3d')) {
-                let scene = new THREE.Scene();
-                let camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
-                let renderer = new THREE.WebGLRenderer({ alpha: true });
-                renderer.setSize(400, 400);
-                document.getElementById('blob3d').appendChild(renderer.domElement);
-                camera.position.z = 3;
-                let geometry = new THREE.IcosahedronGeometry(1, 6);
-                let material = new THREE.MeshStandardMaterial({
-                    color: 0x00ffe7,
-                    roughness: 0.2,
-                    metalness: 0.8,
-                    emissive: 0x00ffe7,
-                    emissiveIntensity: 0.2,
-                    wireframe: false,
-                    transparent: true,
-                    opacity: 0.85
-                });
-                let blob = new THREE.Mesh(geometry, material);
-                scene.add(blob);
-                let light = new THREE.PointLight(0x00ffe7, 2, 100);
-                light.position.set(5, 5, 5);
-                scene.add(light);
-                let clock3d = new THREE.Clock();
-                function animate() {
-                    requestAnimationFrame(animate);
-                    let t = clock3d.getElapsedTime();
-                    for (let i = 0; i < geometry.vertices?.length; i++) {
-                        let p = geometry.vertices[i];
-                        p.normalize().multiplyScalar(1 + 0.2 * Math.sin(t * 2 + i));
-                    }
-                    blob.rotation.x += 0.005;
-                    blob.rotation.y += 0.008;
-                    geometry.verticesNeedUpdate = true;
-                    renderer.render(scene, camera);
-                }
-                animate();
-            }
-            // Animated Background
-            if (document.getElementById('bgParticles')) {
+            // Animated Background (optimized)
+            if (document.getElementById('bgParticles') && !window._bgParticlesInit) {
+                window._bgParticlesInit = true;
                 let canvas = document.getElementById('bgParticles');
                 let ctx = canvas.getContext('2d');
                 let w = window.innerWidth, h = window.innerHeight;
                 canvas.width = w; canvas.height = h;
-                let particles = Array.from({length: 60}, () => ({
-                    x: Math.random()*w, y: Math.random()*h, r: 1+Math.random()*2, dx: (Math.random()-0.5)*0.7, dy: (Math.random()-0.5)*0.7
+                let particles = Array.from({length: 40}, () => ({
+                    x: Math.random()*w, y: Math.random()*h, r: 1+Math.random()*2, dx: (Math.random()-0.5)*0.5, dy: (Math.random()-0.5)*0.5
                 }));
                 function drawParticles() {
                     ctx.clearRect(0,0,w,h);
                     for (let p of particles) {
                         ctx.beginPath();
                         ctx.arc(p.x, p.y, p.r, 0, 2*Math.PI);
-                        ctx.fillStyle = 'rgba(0,255,255,0.15)';
+                        ctx.fillStyle = 'rgba(0,255,255,0.12)';
                         ctx.shadowColor = '#00ffe7';
-                        ctx.shadowBlur = 8;
+                        ctx.shadowBlur = 6;
                         ctx.fill();
                         p.x += p.dx; p.y += p.dy;
                         if (p.x < 0 || p.x > w) p.dx *= -1;
                         if (p.y < 0 || p.y > h) p.dy *= -1;
                     }
-                    requestAnimationFrame(drawParticles);
+                    window._bgParticlesAnim = requestAnimationFrame(drawParticles);
                 }
                 drawParticles();
                 window.addEventListener('resize', () => {
                     w = window.innerWidth; h = window.innerHeight;
                     canvas.width = w; canvas.height = h;
+                });
+                window.addEventListener('beforeunload', () => {
+                    if (window._bgParticlesAnim) cancelAnimationFrame(window._bgParticlesAnim);
                 });
             }
         }
@@ -354,6 +345,61 @@
             alert('Speech recognition error or permission denied.');
           };
           recognition.start();
+        }
+        // --- Chat History Storage ---
+        function saveCurrentSession() {
+          let history = localStorage.getItem('chatHistory') ? JSON.parse(localStorage.getItem('chatHistory')) : [];
+          let allSessions = localStorage.getItem('allChatSessions') ? JSON.parse(localStorage.getItem('allChatSessions')) : [];
+          if (history.length) {
+            allSessions.push({ date: new Date().toLocaleString(), session: history });
+            localStorage.setItem('allChatSessions', JSON.stringify(allSessions));
+            localStorage.removeItem('chatHistory');
+          }
+        }
+        window.addEventListener('beforeunload', saveCurrentSession);
+
+        function showHistoryModal() {
+          const modal = document.getElementById('historyModal');
+          const list = document.getElementById('historyList');
+          let allSessions = localStorage.getItem('allChatSessions') ? JSON.parse(localStorage.getItem('allChatSessions')) : [];
+          list.innerHTML = allSessions.length ? allSessions.map((s, i) => `<div class='mb-2 p-2 border rounded'><b>Session ${i+1} (${s.date})</b><br><button onclick='restoreSession(${i})' class='text-cyan-700 underline'>Restore</button></div>`).join('') : '<div class="text-gray-500">No previous sessions.</div>';
+          modal.classList.remove('hidden');
+        }
+        function hideHistoryModal() {
+          document.getElementById('historyModal').classList.add('hidden');
+        }
+        function restoreSession(idx) {
+          let allSessions = localStorage.getItem('allChatSessions') ? JSON.parse(localStorage.getItem('allChatSessions')) : [];
+          if (allSessions[idx]) {
+            localStorage.setItem('chatHistory', JSON.stringify(allSessions[idx].session));
+            hideHistoryModal();
+            // Reload chatbox
+            document.getElementById('chatbox').innerHTML = '';
+            allSessions[idx].session.forEach(([user, message]) => addMessageToChatbox(user, message));
+          }
+        }
+        function clearAllHistory() {
+          if (confirm('Clear all previous chat sessions?')) {
+            localStorage.removeItem('allChatSessions');
+            showHistoryModal();
+          }
+        }
+        // --- 3-dot menu logic ---
+        function toggleMenu() {
+          const menu = document.getElementById('menuDropdown');
+          menu.classList.toggle('hidden');
+        }
+        document.addEventListener('click', function(e) {
+          if (!e.target.closest('#menuBtn') && !e.target.closest('#menuDropdown')) {
+            document.getElementById('menuDropdown').classList.add('hidden');
+          }
+        });
+        // --- Clear Chat Functionality ---
+        function clearCurrentChat() {
+          if (confirm('Clear the current chat? This cannot be undone.')) {
+            document.getElementById('chatbox').innerHTML = '';
+            localStorage.removeItem('chatHistory');
+          }
         }
         // --- On Load: show auth ---
         showSection('auth');
