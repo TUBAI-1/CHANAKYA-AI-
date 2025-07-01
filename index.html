@@ -146,8 +146,20 @@
                     <div id="chatbox" class="h-96 overflow-y-scroll mb-4">
                         <!-- Chat messages will be dynamically inserted here -->
                     </div>
-                    <div class="flex items-center mt-2">
-                        <input id="userInput" type="text" placeholder="Type your message..." class="flex-grow p-2 border border-cyan-300 rounded-l bg-gray-900 bg-opacity-60 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 transition">
+                    <div class="flex items-center mt-2 gap-2">
+                        <!-- Upload Button -->
+                        <label class="cursor-pointer flex items-center bg-gradient-to-r from-cyan-400 to-blue-500 text-white px-3 py-2 rounded-l font-bold shadow-lg hover:scale-105 transition-transform" title="Upload file/photo">
+                          <input type="file" id="fileInput" multiple class="hidden" onchange="handleFileUpload(event)">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" /></svg>
+                          Upload
+                        </label>
+                        <!-- Message Input -->
+                        <input id="userInput" type="text" placeholder="Type your message..." class="flex-grow p-2 border border-cyan-300 bg-gray-900 bg-opacity-60 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 transition">
+                        <!-- Mic Button -->
+                        <button onclick="startListening()" class="bg-gradient-to-r from-cyan-400 to-blue-500 text-white p-2 rounded-l font-bold shadow-lg hover:scale-105 transition-transform mr-1" title="Speech to Text">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18v4m0 0H8m4 0h4m-4-4a4 4 0 004-4V7a4 4 0 10-8 0v7a4 4 0 004 4z" /></svg>
+                        </button>
+                        <!-- Send Button -->
                         <button onclick="sendMessage()" class="bg-gradient-to-r from-cyan-400 to-blue-500 text-white p-2 rounded-r font-bold shadow-lg hover:scale-105 transition-transform">Send</button>
                         <div id="spinner" class="spinner hidden ml-2"></div>
                     </div>
@@ -317,6 +329,31 @@
                     canvas.width = w; canvas.height = h;
                 });
             }
+        }
+        // --- File Upload Handler ---
+        function handleFileUpload(event) {
+          const files = event.target.files;
+          if (!files.length) return;
+          let fileNames = Array.from(files).map(f => f.name).join(', ');
+          addMessageToChatbox('User', `📎 Uploaded: ${fileNames}`);
+          // Optionally, you can handle file uploads to a server here
+        }
+        // --- Speech to Text ---
+        let recognition;
+        function startListening() {
+          if (!('webkitSpeechRecognition' in window)) {
+            alert('Speech recognition not supported in this browser.');
+            return;
+          }
+          recognition = new webkitSpeechRecognition();
+          recognition.lang = 'en-US';
+          recognition.onresult = function(event) {
+            document.getElementById('userInput').value = event.results[0][0].transcript;
+          };
+          recognition.onerror = function() {
+            alert('Speech recognition error or permission denied.');
+          };
+          recognition.start();
         }
         // --- On Load: show auth ---
         showSection('auth');
